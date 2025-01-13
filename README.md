@@ -1,6 +1,6 @@
 # POC: Paediatric Safety Power Calculator
 
-[Try the demo](https://gravesti.github.io/safetypower-poc/)
+[Try the demo](https://gravesti.github.io/safetypower-poc/site/index.html)
 
 Based on the models set out in
 
