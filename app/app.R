@@ -37,7 +37,11 @@ ui <- page_fillable(
     ),
     card(
       card_header("Results"),
-      tableOutput("table")
+      layout_columns(
+        plotOutput("curve"),
+        tableOutput("table"),
+        col_widths = c(6, 6)
+      )
     ),
     col_widths = c(12, 12)
   )
@@ -53,9 +57,7 @@ server <- function(input, output) {
     updateSliderInput(inputId = "ped_tx_event", max = input$ped_tx_n)
   })
 
-
-  output$table <- renderTable({
-    # browser()
+  prob_table <- reactive({
     prob_rule_out2(
       ref_tx = input$ref_tx,
       ref_cx = input$ref_cx,
@@ -71,9 +73,26 @@ server <- function(input, output) {
       ped_tx_event = input$ped_tx_event,
       ped_tx_n = input$ped_tx_n
     )
-  }
-  )
+  })
+
+  output$table <- renderTable({
+    prob_table()
+  }, digits = 4)
+
+  output$curve <- renderPlot({
+    df <- prob_table()
+    plot(
+      x = df[, 2],
+      y = df[, 3],
+      type = "b",
+      ylim = c(0, 1),
+      xlab = "Fold Increase",
+      ylab = "Probability"
+    )
+  })
+
 }
+
 
 shinyApp(ui = ui, server = server)
 

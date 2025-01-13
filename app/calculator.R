@@ -13,7 +13,7 @@ prob_rule_out2 <- function(
     ped_cx_n = 0,
     ped_tx_event = 0,
     ped_tx_n = 0) {
-  num_ouputs <- 4
+  num_ouputs <- 6
   m <- fold_increase # for length of interval of treatment responses
   trt_nseq <- ped_n_tx
   pbo_nseq <- ped_n_cx
