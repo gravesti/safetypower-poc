@@ -1,49 +1,55 @@
 library(shiny)
 library(bslib)
+library(tinyplot)
 source("calculator.R")
 
-ui <- page_fillable(
+ui <- page_navbar(
   title = "Powered for Paediatric Safety",
-  layout_columns(
-    card(
-      card_header("Inputs"),
-      layout_columns(
-        card(
-          card_header("Reference Population"),
-          numericInput("ref_cx", "Control rate", value = 0.01, min = 0, max = 1, step = 0.01),
-          numericInput("ref_tx", "Treated rate", value = 0.03, min = 0, max = 1, step = 0.01)
+  nav_panel(
+    "Information",
+    "Some text describing the model, inputs and calculations"
+  ),
+  nav_panel(
+    "Calculator",
+    layout_columns(
+      card(
+        layout_columns(
+          card(
+            card_header("Reference Population"),
+            numericInput("ref_cx", "Control rate", value = 0.01, min = 0, max = 1, step = 0.01),
+            numericInput("ref_tx", "Treated rate", value = 0.03, min = 0, max = 1, step = 0.01)
           ),
-        card(
-          card_header("Prior Information"),
-          numericInput("prior_cx_a", "Control alpha", value = 1, min = 0, step = 0.5),
-          numericInput("prior_cx_b", "Control beta", value = 1, min = 0, step = 0.5),
-          numericInput("prior_tx_a", "Treated alpha", value = 1, min = 0, step = 0.5),
-          numericInput("prior_tx_b", "Treated beta", value = 1, min = 0, step = 0.5)
-        ),
-        card(
-          card_header("Safety Database"),
-          numericInput("ped_cx_n", "Control N", value = 0, min = 0),
-          numericInput("ped_cx_event", "Control Events", value = 0, min = 0),
-          numericInput("ped_tx_n", "Treated N", value = 0, min = 0),
-          numericInput("ped_tx_event", "Treated Events", value = 0, min = 0)
-        ),
-        card(
-          card_header("New Study"),
-          numericInput("ped_n_cx", "N control arm", value = 20, min = 0),
-          numericInput("ped_n_tx", "N treated arm", value = 20, min = 0),
-          numericInput("fold_increase", "Fold increase over reference difference", value = 2, min = 1)
+          card(
+            card_header("Prior Information"),
+            numericInput("prior_cx_a", "Control alpha", value = 1, min = 0, step = 0.5),
+            numericInput("prior_cx_b", "Control beta", value = 1, min = 0, step = 0.5),
+            numericInput("prior_tx_a", "Treated alpha", value = 1, min = 0, step = 0.5),
+            numericInput("prior_tx_b", "Treated beta", value = 1, min = 0, step = 0.5)
+          ),
+          card(
+            card_header("Safety Database"),
+            numericInput("ped_cx_n", "Control N", value = 0, min = 0),
+            numericInput("ped_cx_event", "Control Events", value = 0, min = 0),
+            numericInput("ped_tx_n", "Treated N", value = 0, min = 0),
+            numericInput("ped_tx_event", "Treated Events", value = 0, min = 0)
+          ),
+          card(
+            card_header("New Study"),
+            numericInput("new_n", "Sample Size", value = 40, min = 0),
+            shinyWidgets::numericRangeInput("rand", "Randomization", separator = ":", value = c(1, 1)),
+            numericInput("fold_increase", "Fold increase over reference difference", value = 2, min = 1)
+          )
         )
-      )
-    ),
-    card(
-      card_header("Results"),
-      layout_columns(
-        plotOutput("curve"),
-        tableOutput("table"),
-        col_widths = c(6, 6)
-      )
-    ),
-    col_widths = c(12, 12)
+      ),
+      card(
+        layout_columns(
+          plotOutput("curve"),
+          tableOutput("table"),
+          col_widths = c(6, 6)
+        )
+      ),
+      col_widths = c(12, 12)
+    )
   )
 )
 
@@ -62,8 +68,6 @@ server <- function(input, output) {
       ref_tx = input$ref_tx,
       ref_cx = input$ref_cx,
       fold_increase = input$fold_increase,
-      ped_n_cx = input$ped_n_cx,
-      ped_n_tx = input$ped_n_tx,
       prior_tx_a = input$prior_tx_a,
       prior_tx_b = input$prior_tx_b,
       prior_cx_a = input$prior_cx_a,
@@ -71,7 +75,9 @@ server <- function(input, output) {
       ped_cx_event = input$ped_cx_event,
       ped_cx_n = input$ped_cx_n,
       ped_tx_event = input$ped_tx_event,
-      ped_tx_n = input$ped_tx_n
+      ped_tx_n = input$ped_tx_n,
+      new_n = input$new_n,
+      rand = input$rand
     )
   })
 
@@ -81,33 +87,37 @@ server <- function(input, output) {
 
   output$curve <- renderPlot({
     df <- prob_table()
-    plot(
-      x = df[, 2],
-      y = df[, 3],
+
+    # plot(
+    #   x = df$N_t + df$N_c,
+    #   y = df$Probability,
+    #   type = "n",
+    #   ylim = c(0, 1),
+    #   xlab = "Study Size",
+    #   ylab = "Probability"
+    # )
+    #
+    # idf <- split(df, df$`Incidence Difference Factor`)
+    # for (i in seq_along(idf)) {
+    #
+    #   print(points(
+    #     x = idf[i]$N_t + idf[i]$N_c,
+    #     y = idf[i]$Probability,
+    #     type = "b"
+    #   ))
+    # }
+
+    tinyplot(
+      x = df$N_t + df$N_c,
+      y = df$Probability,
+      by = df$`Incidence Difference Factor`,
       type = "b",
       ylim = c(0, 1),
-      xlab = "Fold Increase",
+      xlab = "Study Size",
       ylab = "Probability"
     )
   })
 
 }
 
-
 shinyApp(ui = ui, server = server)
-
-
-#
-# ref_tx = 0.06,
-# ref_cx = 0.03,
-# fold_increase = 3,
-# rand_ratio = 1/1,
-# ped_n = 200,
-#  = 1,
-#  = 1,
-#  = 1,
-# prior_cx_b = 1,
-#  = 0,
-#  = 0,
-#  = 0,
-#  = 0
