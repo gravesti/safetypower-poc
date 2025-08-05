@@ -20,18 +20,26 @@ ui <- page_navbar(
             numericInput("ref_tx", "Treated rate", value = 0.03, min = 0, max = 1, step = 0.01)
           ),
           card(
-            card_header("Prior Information"),
-            numericInput("prior_cx_a", "Control alpha", value = 1, min = 0, step = 0.5),
-            numericInput("prior_cx_b", "Control beta", value = 1, min = 0, step = 0.5),
-            numericInput("prior_tx_a", "Treated alpha", value = 1, min = 0, step = 0.5),
-            numericInput("prior_tx_b", "Treated beta", value = 1, min = 0, step = 0.5)
+            card_header("Prior Distributions"),
+              ("Beta Prior for Control"),
+              layout_columns(
+                shinyWidgets::numericInputIcon("prior_cx_a", label = NULL, icon= "\u03b1", value = 1, min = 0, step = 0.5),
+                shinyWidgets::numericInputIcon("prior_cx_b", label = NULL, icon= "\u03b2", value = 1, min = 0, step = 0.5)
+              ),
+            ("Beta Prior for Treated"),
+            layout_columns(
+              shinyWidgets::numericInputIcon("prior_tx_a", label = NULL, icon= "\u03b1", value = 1, min = 0, step = 0.5),
+              shinyWidgets::numericInputIcon("prior_tx_b", label = NULL, icon= "\u03b1", value = 1, min = 0, step = 0.5)
+            )
           ),
           card(
             card_header("Safety Database"),
-            numericInput("ped_cx_n", "Control N", value = 0, min = 0),
-            numericInput("ped_cx_event", "Control Events", value = 0, min = 0),
-            numericInput("ped_tx_n", "Treated N", value = 0, min = 0),
-            numericInput("ped_tx_event", "Treated Events", value = 0, min = 0)
+            shinyWidgets::numericRangeInput("db_cx", "Control Database (#Events / N)", value = c(0,0), separator = "/"),
+            shinyWidgets::numericRangeInput("db_tx", "Treated Database (#Events / N)", value = c(0,0), separator = "/"),
+            # numericInput("ped_cx_n", "Control N", value = 0, min = 0),
+            # numericInput("ped_cx_event", "Control Events", value = 0, min = 0),
+            # numericInput("ped_tx_n", "Treated N", value = 0, min = 0),
+            # numericInput("ped_tx_event", "Treated Events", value = 0, min = 0)
           ),
           card(
             card_header("New Study"),
@@ -56,12 +64,12 @@ ui <- page_navbar(
 server <- function(input, output) {
 
   # Constrain inputs dynamically
-  observeEvent(input$ped_cx_n, {
-    updateSliderInput(inputId = "ped_cx_event", max = input$ped_cx_n)
-  })
-  observeEvent(input$ped_tx_n, {
-    updateSliderInput(inputId = "ped_tx_event", max = input$ped_tx_n)
-  })
+  # observeEvent(input$ped_cx_n, {
+  #   updateSliderInput(inputId = "ped_cx_event", max = input$ped_cx_n)
+  # })
+  # observeEvent(input$ped_tx_n, {
+  #   updateSliderInput(inputId = "ped_tx_event", max = input$ped_tx_n)
+  # })
 
   prob_table <- reactive({
     prob_rule_out2(
@@ -72,10 +80,10 @@ server <- function(input, output) {
       prior_tx_b = input$prior_tx_b,
       prior_cx_a = input$prior_cx_a,
       prior_cx_b = input$prior_cx_b,
-      ped_cx_event = input$ped_cx_event,
-      ped_cx_n = input$ped_cx_n,
-      ped_tx_event = input$ped_tx_event,
-      ped_tx_n = input$ped_tx_n,
+      ped_cx_event = input$db_cx[1],
+      ped_cx_n = input$db_cx[2],
+      ped_tx_event = input$db_tx[1],
+      ped_tx_n = input$db_tx[2],
       new_n = input$new_n,
       rand = input$rand
     )
@@ -112,7 +120,7 @@ server <- function(input, output) {
       y = df$Probability,
       by = df$`Incidence Difference Factor`,
       type = "b",
-      ylim = c(0, 1),
+      # ylim = c(0, 1),
       xlab = "Study Size",
       ylab = "Probability"
     )
